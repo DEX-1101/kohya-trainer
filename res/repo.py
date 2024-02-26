@@ -9,8 +9,6 @@ from subprocess import getoutput
 from IPython.utils import capture
 #from google.colab import drive
 
-%store -r
-
 # root_dir
 root_dir          = "/kaggle/working"
 drive_dir         = os.path.join(root_dir, "drive/MyDrive")
