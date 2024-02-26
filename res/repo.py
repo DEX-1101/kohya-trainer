@@ -24,11 +24,6 @@ tools_dir         = os.path.join(repo_dir, "tools")
 finetune_dir      = os.path.join(repo_dir, "finetune")
 accelerate_config = os.path.join(repo_dir, "accelerate_config/config.yaml")
 
-for store in ["root_dir", "repo_dir", "training_dir", "pretrained_model", "vae_dir", "repositories_dir", "accelerate_config", "tools_dir", "finetune_dir", "config_dir"]:
-    with capture.capture_output() as cap:
-        %store {store}
-        del cap
-
 repo_dict = {
     "qaneel/kohya-trainer (forked repo, stable, optimized for colab use)" : "https://github.com/qaneel/kohya-trainer",
     "kohya-ss/sd-scripts (original repo, latest update)"                    : "https://github.com/kohya-ss/sd-scripts",
