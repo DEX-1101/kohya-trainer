@@ -20,7 +20,7 @@ output_to_drive   = False  # @param {type: "boolean"}
 
 def clone_repo(url, dir, branch):
     if not os.path.exists(dir):
-       !git clone -b {branch} {url} {dir}
+       system.os(git clone -b {branch} {url} {dir})
 
 def mount_drive(dir):
     output_dir      = os.path.join(training_dir, "output")
