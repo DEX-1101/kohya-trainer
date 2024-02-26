@@ -8,6 +8,21 @@ from subprocess import getoutput
 from IPython.utils import capture
 #from google.colab import drive
 
+# root_dir
+root_dir          = "/kaggle/working"
+drive_dir         = os.path.join(root_dir, "drive/MyDrive")
+deps_dir          = os.path.join(root_dir, "deps")
+repo_dir          = os.path.join(root_dir, "kohya-trainer")
+training_dir      = os.path.join(root_dir, "LoRA")
+pretrained_model  = os.path.join(root_dir, "pretrained_model")
+vae_dir           = os.path.join(root_dir, "vae")
+lora_dir          = os.path.join(root_dir, "network_weight")
+repositories_dir  = os.path.join(root_dir, "repositories")
+config_dir        = os.path.join(training_dir, "config")
+tools_dir         = os.path.join(repo_dir, "tools")
+finetune_dir      = os.path.join(repo_dir, "finetune")
+accelerate_config = os.path.join(repo_dir, "accelerate_config/config.yaml")
+
 repo_dict = {
     "qaneel/kohya-trainer (forked repo, stable, optimized for colab use)" : "https://github.com/qaneel/kohya-trainer",
     "kohya-ss/sd-scripts (original repo, latest update)"                    : "https://github.com/kohya-ss/sd-scripts",
