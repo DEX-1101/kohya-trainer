@@ -1,4 +1,3 @@
-#Install Kohya Trainer
 import os
 import zipfile
 import shutil
@@ -8,21 +7,6 @@ import torch
 from subprocess import getoutput
 from IPython.utils import capture
 #from google.colab import drive
-
-# root_dir
-root_dir          = "/kaggle/working"
-drive_dir         = os.path.join(root_dir, "drive/MyDrive")
-deps_dir          = os.path.join(root_dir, "deps")
-repo_dir          = os.path.join(root_dir, "kohya-trainer")
-training_dir      = os.path.join(root_dir, "LoRA")
-pretrained_model  = os.path.join(root_dir, "pretrained_model")
-vae_dir           = os.path.join(root_dir, "vae")
-lora_dir          = os.path.join(root_dir, "network_weight")
-repositories_dir  = os.path.join(root_dir, "repositories")
-config_dir        = os.path.join(training_dir, "config")
-tools_dir         = os.path.join(repo_dir, "tools")
-finetune_dir      = os.path.join(repo_dir, "finetune")
-accelerate_config = os.path.join(repo_dir, "accelerate_config/config.yaml")
 
 repo_dict = {
     "qaneel/kohya-trainer (forked repo, stable, optimized for colab use)" : "https://github.com/qaneel/kohya-trainer",
@@ -95,6 +79,7 @@ def install_dependencies():
     t4_xformers_wheel = "https://github.com/Linaqruf/colab-xformers/releases/download/0.0.20/xformers-0.0.20+1d635e1.d20230519-cp310-cp310-linux_x86_64.whl"
 
     !apt install -y aria2 lz4
+    !wget https://github.com/DEX-1101/kohya-trainer/raw/main/requirements.txt -O /kaggle/working/requirements.txt
     !wget https://github.com/camenduru/gperftools/releases/download/v1.0/libtcmalloc_minimal.so.4 -O /kaggle/working/libtcmalloc_minimal.so.4
     !pip install -q --upgrade -r {requirements_file}
 
@@ -116,7 +101,7 @@ def main():
     clone_repo(repo_url, repo_dir, branch)
     os.chdir(repo_dir)
     setup_directories()
-    #install_repository()
+    install_repository()
     install_dependencies()
     prepare_environment()
 
