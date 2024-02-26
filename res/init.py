@@ -68,9 +68,9 @@ def install_repository():
     clone_repo(infinite_image_browser_url, infinite_image_browser_dir, "main")
     clone_repo(discordia_archivum_url, discordia_archivum_dir, "main")
 
-    !pip install -q --upgrade -r {infinite_image_browser_deps}
-    !pip install python-dotenv
-    !pip install -q --upgrade -r {discordia_archivum_deps}
+    os.system('pip install -q --upgrade -r {infinite_image_browser_deps}')
+    os.system('pip install python-dotenv')
+    os.system('pip install -q --upgrade -r {discordia_archivum_deps}')
 
 def install_dependencies():
     requirements_file = os.path.join(repo_dir, "requirements.txt")
@@ -78,12 +78,12 @@ def install_dependencies():
     gpu_info          = getoutput('nvidia-smi')
     t4_xformers_wheel = "https://github.com/Linaqruf/colab-xformers/releases/download/0.0.20/xformers-0.0.20+1d635e1.d20230519-cp310-cp310-linux_x86_64.whl"
 
-    !apt install -y aria2 lz4
-    !wget https://github.com/DEX-1101/kohya-trainer/raw/main/requirements.txt -O /kaggle/working/requirements.txt
-    !wget https://github.com/camenduru/gperftools/releases/download/v1.0/libtcmalloc_minimal.so.4 -O /kaggle/working/libtcmalloc_minimal.so.4
-    !pip install -q --upgrade -r {requirements_file}
+    os.system('apt install -y aria2 lz4')
+    os.system('wget https://github.com/DEX-1101/kohya-trainer/raw/main/requirements.txt -O /kaggle/working/requirements.txt')
+    os.system('wget https://github.com/camenduru/gperftools/releases/download/v1.0/libtcmalloc_minimal.so.4 -O /kaggle/working/libtcmalloc_minimal.so.4')
+    os.system('pip install -q --upgrade -r {requirements_file}')
 
-    !pip install -q xformers==0.0.22.post7
+    os.system('pip install -q xformers==0.0.22.post7')
 
     from accelerate.utils import write_basic_config
 
