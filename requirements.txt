@@ -24,4 +24,6 @@ lion-pytorch==0.1.2
 prodigyopt==1.0
 # for network module
 lycoris-lora==0.1.4
+# for kaggle env
+packaging==23.1
 .
