@@ -11,7 +11,6 @@ tensorflow
 safetensors==0.4.1
 toml==0.10.2
 voluptuous==0.13.1
-invisible-watermark==0.2.0
 # for BLIP captioning
 requests==2.31.0
 timm==0.6.12
@@ -25,5 +24,4 @@ lion-pytorch==0.1.2
 prodigyopt==1.0
 # for network module
 lycoris-lora==0.1.4
-# for kaggle env
 .
