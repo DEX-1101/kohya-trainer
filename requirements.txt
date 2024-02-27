@@ -26,7 +26,6 @@ lion-pytorch==0.1.2
 prodigyopt==1.0
 # for network module
 lycoris-lora==0.1.4
-xformers==0.0.22.post7
 # for kaggle env
 jupyter-lsp===2.0.0
 packaging==22
