@@ -12,7 +12,6 @@ safetensors==0.4.1
 toml==0.10.2
 voluptuous==0.13.1
 invisible-watermark==0.2.0
-open-clip-torch==2.20.0
 # for BLIP captioning
 requests==2.31.0
 timm==0.6.12
