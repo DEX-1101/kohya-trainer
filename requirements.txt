@@ -18,7 +18,7 @@ huggingface-hub==0.20.3
 gdown==4.7.1
 imjoy-elfinder==0.1.61
 dadaptation==3.1
-lion-pytorch==0.0.6
+lion-pytorch==0.1.2
 prodigyopt==1.0
 lycoris-lora==0.1.4
 # for kohya_ss library
