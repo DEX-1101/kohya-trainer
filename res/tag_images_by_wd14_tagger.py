@@ -169,8 +169,8 @@ def main(args):
     # 画像を読み込む
 
     train_data_dir_path = Path(args.train_data_dir)
-    image_paths = train_util.glob_images_pathlib(train_data_dir_path, args.recursive)
-    print(f"found {len(image_paths)} images.")
+    image_paths = Path(train_data_dir_path)
+    print(f"found {image_paths} images.")
 
     tag_freq = {}
 
