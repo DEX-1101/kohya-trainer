@@ -257,33 +257,101 @@ def main(args):
     print("done!")
 
 
-if __name__ == '__main__':
+def setup_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("train_data_dir", type=str, help="directory for train images / 学習画像データのディレクトリ")
-    parser.add_argument("--repo_id", type=str, default=DEFAULT_WD14_TAGGER_REPO,
-    help="repo id for wd14 tagger on Hugging Face / Hugging Faceのwd14 taggerのリポジトリID")
-    parser.add_argument("--model_dir", type=str, default="wd14_tagger_model",
-    help="directory to store wd14 tagger model / wd14 taggerのモデルを格納するディレクトリ")
-    parser.add_argument("--force_download", action='store_true',
-    help="force downloading wd14 tagger models / wd14 taggerのモデルを再ダウンロードします")
+    parser.add_argument(
+        "--repo_id",
+        type=str,
+        default=DEFAULT_WD14_TAGGER_REPO,
+        help="repo id for wd14 tagger on Hugging Face / Hugging Faceのwd14 taggerのリポジトリID",
+    )
+    parser.add_argument(
+        "--model_dir",
+        type=str,
+        default="wd14_tagger_model",
+        help="directory to store wd14 tagger model / wd14 taggerのモデルを格納するディレクトリ",
+    )
+    parser.add_argument(
+        "--force_download",
+        action="store_true",
+        help="force downloading wd14 tagger models / wd14 taggerのモデルを再ダウンロードします",
+    )
     parser.add_argument("--batch_size", type=int, default=1, help="batch size in inference / 推論時のバッチサイズ")
-    parser.add_argument("--max_data_loader_n_workers", type=int, default=None,
-    help="enable image reading by DataLoader with this number of workers (faster) / DataLoaderによる画像読み込みを有効にしてこのワーカー数を適用する（読み込みを高速化）")
-    parser.add_argument("--caption_extention", type=str, default=None,
-    help="extension of caption file (for backward compatibility) / 出力されるキャプションファイルの拡張子（スペルミスしていたのを残してあります）")
-    parser.add_argument("--caption_extension", type=str, default=".txt", help="extension of caption file / 出力されるキャプションファイルの拡張子")
-    parser.add_argument("--general_threshold", type=float, default=0.35, help="threshold of confidence to add a tag for general category")
-    parser.add_argument("--character_threshold", type=float, default=0.35, help="threshold of confidence to add a tag for character category")
-    parser.add_argument("--recursive", action="store_true", help="search for images in subfolders recursively")
-    parser.add_argument("--remove_underscore", action="store_true", help="replace underscores with spaces in the output tags")
+    parser.add_argument(
+        "--max_data_loader_n_workers",
+        type=int,
+        default=None,
+        help="enable image reading by DataLoader with this number of workers (faster) / DataLoaderによる画像読み込みを有効にしてこのワーカー数を適用する（読み込みを高速化）",
+    )
+    parser.add_argument(
+        "--caption_extention",
+        type=str,
+        default=None,
+        help="extension of caption file (for backward compatibility) / 出力されるキャプションファイルの拡張子（スペルミスしていたのを残してあります）",
+    )
+    parser.add_argument(
+        "--caption_extension", type=str, default=".txt", help="extension of caption file / 出力されるキャプションファイルの拡張子"
+    )
+    parser.add_argument(
+        "--thresh", type=float, default=0.35, help="threshold of confidence to add a tag / タグを追加するか判定する閾値"
+    )
+    parser.add_argument(
+        "--general_threshold",
+        type=float,
+        default=None,
+        help="threshold of confidence to add a tag for general category, same as --thresh if omitted / generalカテゴリのタグを追加するための確信度の閾値、省略時は --thresh と同じ",
+    )
+    parser.add_argument(
+        "--character_threshold",
+        type=float,
+        default=None,
+        help="threshold of confidence to add a tag for character category, same as --thres if omitted / characterカテゴリのタグを追加するための確信度の閾値、省略時は --thresh と同じ",
+    )
+    parser.add_argument(
+        "--recursive", action="store_true", help="search for images in subfolders recursively / サブフォルダを再帰的に検索する"
+    )
+    parser.add_argument(
+        "--remove_underscore",
+        action="store_true",
+        help="replace underscores with spaces in the output tags / 出力されるタグのアンダースコアをスペースに置き換える",
+    )
     parser.add_argument("--debug", action="store_true", help="debug mode")
-    parser.add_argument("--undesired_tags", type=str, default="", help="comma-separated list of undesired tags to remove from the output")
-    parser.add_argument('--frequency_tags', action='store_true', help='Show frequency of tags for images')
+    parser.add_argument(
+        "--undesired_tags",
+        type=str,
+        default="",
+        help="comma-separated list of undesired tags to remove from the output / 出力から除外したいタグのカンマ区切りのリスト",
+    )
+    parser.add_argument(
+        "--frequency_tags", action="store_true", help="Show frequency of tags for images / 画像ごとのタグの出現頻度を表示する"
+    )
+    parser.add_argument("--onnx", action="store_true", help="use onnx model for inference / onnxモデルを推論に使用する")
+    parser.add_argument(
+        "--append_tags", action="store_true", help="Append captions instead of overwriting / 上書きではなくキャプションを追記する"
+    )
+    parser.add_argument(
+        "--caption_separator",
+        type=str,
+        default=", ",
+        help="Separator for captions, include space if needed / キャプションの区切り文字、必要ならスペースを含めてください",
+    )
+
+    return parser
+
+
+if __name__ == "__main__":
+    parser = setup_parser()
 
     args = parser.parse_args()
 
     # スペルミスしていたオプションを復元する
     if args.caption_extention is not None:
         args.caption_extension = args.caption_extention
+
+    if args.general_threshold is None:
+        args.general_threshold = args.thresh
+    if args.character_threshold is None:
+        args.character_threshold = args.thresh
 
     main(args)
