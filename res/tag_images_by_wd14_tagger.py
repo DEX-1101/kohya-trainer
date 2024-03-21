@@ -1,33 +1,38 @@
 import argparse
 import csv
-import glob
 import os
-
-from PIL import Image
-import cv2
-from tqdm import tqdm
-import numpy as np
-from tensorflow.keras.models import load_model
-from huggingface_hub import hf_hub_download
-import torch
 from pathlib import Path
 
+import cv2
+import numpy as np
+import torch
+from huggingface_hub import hf_hub_download
+from PIL import Image
+from tqdm import tqdm
+
 import library.train_util as train_util
+from library.utils import setup_logging
+
+setup_logging()
+import logging
+
+logger = logging.getLogger(__name__)
 
 # from wd14 tagger
 IMAGE_SIZE = 448
 
 # wd-v1-4-swinv2-tagger-v2 / wd-v1-4-vit-tagger / wd-v1-4-vit-tagger-v2/ wd-v1-4-convnext-tagger / wd-v1-4-convnext-tagger-v2
-DEFAULT_WD14_TAGGER_REPO = 'SmilingWolf/wd-v1-4-convnext-tagger-v2'
+DEFAULT_WD14_TAGGER_REPO = "SmilingWolf/wd-v1-4-convnext-tagger-v2"
 FILES = ["keras_metadata.pb", "saved_model.pb", "selected_tags.csv"]
 FILES_ONNX = ["model.onnx"]
 SUB_DIR = "variables"
 SUB_DIR_FILES = ["variables.data-00000-of-00001", "variables.index"]
 CSV_FILE = FILES[-1]
 
+
 def preprocess_image(image):
     image = np.array(image)
-    image = image[:, :, ::-1]                         # RGB->BGR
+    image = image[:, :, ::-1]  # RGB->BGR
 
     # pad to square
     size = max(image.shape[0:2])
@@ -35,13 +40,14 @@ def preprocess_image(image):
     pad_y = size - image.shape[0]
     pad_l = pad_x // 2
     pad_t = pad_y // 2
-    image = np.pad(image, ((pad_t, pad_y - pad_t), (pad_l, pad_x - pad_l), (0, 0)), mode='constant', constant_values=255)
+    image = np.pad(image, ((pad_t, pad_y - pad_t), (pad_l, pad_x - pad_l), (0, 0)), mode="constant", constant_values=255)
 
     interp = cv2.INTER_AREA if size > IMAGE_SIZE else cv2.INTER_LANCZOS4
     image = cv2.resize(image, (IMAGE_SIZE, IMAGE_SIZE), interpolation=interp)
 
     image = image.astype(np.float32)
     return image
+
 
 class ImageLoadingPrepDataset(torch.utils.data.Dataset):
     def __init__(self, image_paths):
@@ -58,11 +64,12 @@ class ImageLoadingPrepDataset(torch.utils.data.Dataset):
             image = preprocess_image(image)
             tensor = torch.tensor(image)
         except Exception as e:
-            print(f"Could not load image path / 画像を読み込めません: {img_path}, error: {e}")
+            logger.error(f"Could not load image path / 画像を読み込めません: {img_path}, error: {e}")
             return None
 
         return (tensor, img_path)
-  
+
+
 def collate_fn_remove_corrupted(batch):
     """Collate function that allows to remove corrupted examples in the
     dataloader. It expects that the dataloader returns 'None' when that occurs.
@@ -72,14 +79,18 @@ def collate_fn_remove_corrupted(batch):
     batch = list(filter(lambda x: x is not None, batch))
     return batch
 
+
 def main(args):
-    # hf_hub_downloadをそのまま使うとsymlink関係で問題があるらしいので、キャッシュディレクトリとforce_filenameを指定してなんとかする
+    # model location is model_dir + repo_id
+    # repo id may be like "user/repo" or "user/repo/branch", so we need to remove slash
     model_location = os.path.join(args.model_dir, args.repo_id.replace("/", "_"))
+
+    # hf_hub_downloadをそのまま使うとsymlink関係で問題があるらしいので、キャッシュディレクトリとforce_filenameを指定してなんとかする
     # depreacatedの警告が出るけどなくなったらその時
     # https://github.com/toriato/stable-diffusion-webui-wd14-tagger/issues/22
     if not os.path.exists(model_location) or args.force_download:
         os.makedirs(args.model_dir, exist_ok=True)
-        print(f"downloading wd14 tagger model from hf_hub. id: {args.repo_id}")
+        logger.info(f"downloading wd14 tagger model from hf_hub. id: {args.repo_id}")
         files = FILES
         if args.onnx:
             files = ["selected_tags.csv"]
@@ -97,7 +108,7 @@ def main(args):
         for file in files:
             hf_hub_download(args.repo_id, file, cache_dir=model_location, force_download=True, force_filename=file)
     else:
-        print("using existing wd14 tagger model")
+        logger.info("using existing wd14 tagger model")
 
     # 画像を読み込む
     if args.onnx:
@@ -106,8 +117,8 @@ def main(args):
         import onnxruntime as ort
 
         onnx_path = f"{model_location}/model.onnx"
-        print("Running wd14 tagger with onnx")
-        print(f"loading onnx model: {onnx_path}")
+        logger.info("Running wd14 tagger with onnx")
+        logger.info(f"loading onnx model: {onnx_path}")
 
         if not os.path.exists(onnx_path):
             raise Exception(
@@ -124,7 +135,7 @@ def main(args):
 
         if args.batch_size != batch_size and type(batch_size) != str and batch_size > 0:
             # some rebatch model may use 'N' as dynamic axes
-            print(
+            logger.warning(
                 f"Batch size {args.batch_size} doesn't match onnx model batch size {batch_size}, use model batch size {batch_size}"
             )
             args.batch_size = batch_size
@@ -145,31 +156,39 @@ def main(args):
     # label_names = pd.read_csv("2022_0000_0899_6549/selected_tags.csv")
     # 依存ライブラリを増やしたくないので自力で読むよ
 
-    with open(os.path.join(args.model_dir, CSV_FILE), "r", encoding="utf-8") as f:
+    with open(os.path.join(model_location, CSV_FILE), "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         l = [row for row in reader]
-        header = l[0]             # tag_id,name,category,count
+        header = l[0]  # tag_id,name,category,count
         rows = l[1:]
-    assert header[0] == 'tag_id' and header[1] == 'name' and header[2] == 'category', f"unexpected csv format: {header}"
+    assert header[0] == "tag_id" and header[1] == "name" and header[2] == "category", f"unexpected csv format: {header}"
 
-    general_tags = [row[1] for row in rows[1:] if row[2] == '0']
-    character_tags = [row[1] for row in rows[1:] if row[2] == '4']
+    general_tags = [row[1] for row in rows[1:] if row[2] == "0"]
+    character_tags = [row[1] for row in rows[1:] if row[2] == "4"]
 
     # 画像を読み込む
-    
-    train_data_dir = Path(args.train_data_dir)
-    image_paths = train_util.glob_images_pathlib(train_data_dir, args.recursive)
-    print(f"found {len(image_paths)} images.")
+
+    train_data_dir_path = Path(args.train_data_dir)
+    image_paths = train_util.glob_images_pathlib(train_data_dir_path, args.recursive)
+    logger.info(f"found {len(image_paths)} images.")
 
     tag_freq = {}
 
-    undesired_tags = set(args.undesired_tags.split(','))
+    caption_separator = args.caption_separator
+    stripped_caption_separator = caption_separator.strip()
+    undesired_tags = set(args.undesired_tags.split(stripped_caption_separator))
 
     def run_batch(path_imgs):
         imgs = np.array([im for _, im in path_imgs])
 
-        probs = model(imgs, training=False)
-        probs = probs.numpy()
+        if args.onnx:
+            # if len(imgs) < args.batch_size:
+            #     imgs = np.concatenate([imgs, np.zeros((args.batch_size - len(imgs), IMAGE_SIZE, IMAGE_SIZE, 3))], axis=0)
+            probs = ort_sess.run(None, {input_name: imgs})[0]  # onnx output numpy
+            probs = probs[: len(path_imgs)]
+        else:
+            probs = model(imgs, training=False)
+            probs = probs.numpy()
 
         for (image_path, _), prob in zip(path_imgs, probs):
             # 最初の4つはratingなので無視する
@@ -185,37 +204,69 @@ def main(args):
             character_tag_text = ""
             for i, p in enumerate(prob[4:]):
                 if i < len(general_tags) and p >= args.general_threshold:
-                    tag_name = general_tags[i].replace('_', ' ') if args.remove_underscore else general_tags[i]
+                    tag_name = general_tags[i]
+                    if args.remove_underscore and len(tag_name) > 3:  # ignore emoji tags like >_< and ^_^
+                        tag_name = tag_name.replace("_", " ")
+
                     if tag_name not in undesired_tags:
                         tag_freq[tag_name] = tag_freq.get(tag_name, 0) + 1
-                        general_tag_text += ", " + tag_name
+                        general_tag_text += caption_separator + tag_name
                         combined_tags.append(tag_name)
                 elif i >= len(general_tags) and p >= args.character_threshold:
-                    tag_name = character_tags[i - len(general_tags)].replace('_', ' ') if args.remove_underscore else character_tags[i - len(general_tags)]
+                    tag_name = character_tags[i - len(general_tags)]
+                    if args.remove_underscore and len(tag_name) > 3:
+                        tag_name = tag_name.replace("_", " ")
+
                     if tag_name not in undesired_tags:
                         tag_freq[tag_name] = tag_freq.get(tag_name, 0) + 1
-                        character_tag_text += ", " + tag_name
+                        character_tag_text += caption_separator + tag_name
                         combined_tags.append(tag_name)
 
+            # 先頭のカンマを取る
             if len(general_tag_text) > 0:
-                general_tag_text = general_tag_text[2:]
-
+                general_tag_text = general_tag_text[len(caption_separator) :]
             if len(character_tag_text) > 0:
-                character_tag_text = character_tag_text[2:]
+                character_tag_text = character_tag_text[len(caption_separator) :]
 
-            tag_text = ', '.join(combined_tags)
-            
-            with open(os.path.splitext(image_path)[0] + args.caption_extension, "wt", encoding='utf-8') as f:
-                f.write(tag_text + '\n')
+            caption_file = os.path.splitext(image_path)[0] + args.caption_extension
+
+            tag_text = caption_separator.join(combined_tags)
+
+            if args.append_tags:
+                # Check if file exists
+                if os.path.exists(caption_file):
+                    with open(caption_file, "rt", encoding="utf-8") as f:
+                        # Read file and remove new lines
+                        existing_content = f.read().strip("\n")  # Remove newlines
+
+                    # Split the content into tags and store them in a list
+                    existing_tags = [tag.strip() for tag in existing_content.split(stripped_caption_separator) if tag.strip()]
+
+                    # Check and remove repeating tags in tag_text
+                    new_tags = [tag for tag in combined_tags if tag not in existing_tags]
+
+                    # Create new tag_text
+                    tag_text = caption_separator.join(existing_tags + new_tags)
+
+            with open(caption_file, "wt", encoding="utf-8") as f:
+                f.write(tag_text + "\n")
                 if args.debug:
-                    print(f"\n{image_path}:\n  Character tags: {character_tag_text}\n  General tags: {general_tag_text}")
-
+                    logger.info("")
+                    logger.info(f"{image_path}:")
+                    logger.info(f"\tCharacter tags: {character_tag_text}")
+                    logger.info(f"\tGeneral tags: {general_tag_text}")
 
     # 読み込みの高速化のためにDataLoaderを使うオプション
     if args.max_data_loader_n_workers is not None:
         dataset = ImageLoadingPrepDataset(image_paths)
-        data = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=False,
-                                        num_workers=args.max_data_loader_n_workers, collate_fn=collate_fn_remove_corrupted, drop_last=False)
+        data = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=args.max_data_loader_n_workers,
+            collate_fn=collate_fn_remove_corrupted,
+            drop_last=False,
+        )
     else:
         data = [[(None, ip)] for ip in image_paths]
 
@@ -231,11 +282,11 @@ def main(args):
             else:
                 try:
                     image = Image.open(image_path)
-                    if image.mode != 'RGB':
+                    if image.mode != "RGB":
                         image = image.convert("RGB")
                     image = preprocess_image(image)
                 except Exception as e:
-                    print(f"Could not load image path / 画像を読み込めません: {image_path}, error: {e}")
+                    logger.error(f"Could not load image path / 画像を読み込めません: {image_path}, error: {e}")
                     continue
             b_imgs.append((image_path, image))
 
@@ -250,11 +301,11 @@ def main(args):
 
     if args.frequency_tags:
         sorted_tags = sorted(tag_freq.items(), key=lambda x: x[1], reverse=True)
-        print("\nTag frequencies:")
+        print("Tag frequencies:")
         for tag, freq in sorted_tags:
             print(f"{tag}: {freq}")
 
-    print("done!")
+    logger.info("done!")
 
 
 def setup_parser() -> argparse.ArgumentParser:
