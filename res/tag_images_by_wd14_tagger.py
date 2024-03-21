@@ -74,20 +74,73 @@ def collate_fn_remove_corrupted(batch):
 
 def main(args):
     # hf_hub_downloadをそのまま使うとsymlink関係で問題があるらしいので、キャッシュディレクトリとforce_filenameを指定してなんとかする
+    model_location = os.path.join(args.model_dir, args.repo_id.replace("/", "_"))
     # depreacatedの警告が出るけどなくなったらその時
     # https://github.com/toriato/stable-diffusion-webui-wd14-tagger/issues/22
-    if not os.path.exists(args.model_dir) or args.force_download:
+    if not os.path.exists(model_location) or args.force_download:
+        os.makedirs(args.model_dir, exist_ok=True)
         print(f"downloading wd14 tagger model from hf_hub. id: {args.repo_id}")
-        for file in FILES:
-            hf_hub_download(args.repo_id, file, cache_dir=args.model_dir, force_download=True, force_filename=file)
-        for file in SUB_DIR_FILES:
-            hf_hub_download(args.repo_id, file, subfolder=SUB_DIR, cache_dir=os.path.join(
-                args.model_dir, SUB_DIR), force_download=True, force_filename=file)
+        files = FILES
+        if args.onnx:
+            files = ["selected_tags.csv"]
+            files += FILES_ONNX
+        else:
+            for file in SUB_DIR_FILES:
+                hf_hub_download(
+                    args.repo_id,
+                    file,
+                    subfolder=SUB_DIR,
+                    cache_dir=os.path.join(model_location, SUB_DIR),
+                    force_download=True,
+                    force_filename=file,
+                )
+        for file in files:
+            hf_hub_download(args.repo_id, file, cache_dir=model_location, force_download=True, force_filename=file)
     else:
         print("using existing wd14 tagger model")
 
     # 画像を読み込む
-    model = load_model(args.model_dir)
+    if args.onnx:
+        import torch
+        import onnx
+        import onnxruntime as ort
+
+        onnx_path = f"{model_location}/model.onnx"
+        print("Running wd14 tagger with onnx")
+        print(f"loading onnx model: {onnx_path}")
+
+        if not os.path.exists(onnx_path):
+            raise Exception(
+                f"onnx model not found: {onnx_path}, please redownload the model with --force_download"
+                + " / onnxモデルが見つかりませんでした。--force_downloadで再ダウンロードしてください"
+            )
+
+        model = onnx.load(onnx_path)
+        input_name = model.graph.input[0].name
+        try:
+            batch_size = model.graph.input[0].type.tensor_type.shape.dim[0].dim_value
+        except:
+            batch_size = model.graph.input[0].type.tensor_type.shape.dim[0].dim_param
+
+        if args.batch_size != batch_size and type(batch_size) != str and batch_size > 0:
+            # some rebatch model may use 'N' as dynamic axes
+            print(
+                f"Batch size {args.batch_size} doesn't match onnx model batch size {batch_size}, use model batch size {batch_size}"
+            )
+            args.batch_size = batch_size
+
+        del model
+
+        ort_sess = ort.InferenceSession(
+            onnx_path,
+            providers=(
+                ["CUDAExecutionProvider"] if "CUDAExecutionProvider" in ort.get_available_providers() else ["CPUExecutionProvider"]
+            ),
+        )
+    else:
+        from tensorflow.keras.models import load_model
+
+        model = load_model(f"{model_location}")
 
     # label_names = pd.read_csv("2022_0000_0899_6549/selected_tags.csv")
     # 依存ライブラリを増やしたくないので自力で読むよ
