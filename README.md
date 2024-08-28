@@ -5,6 +5,7 @@ LoRA XL Trainer colab from [Linarquf](https://github.com/Linaqruf/kohya-trainer)
 
 # Updates
 2024
+- support WD14 v3 Tagger Large Models 
 - added WD14 v3 Tagger
 - added `Prodigy` optimizer.
 - added `text_encoder_lr` `cache_latents` `cache_latents_to_disk`.
