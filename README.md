@@ -5,6 +5,8 @@ LoRA XL Trainer colab from [Linarquf](https://github.com/Linaqruf/kohya-trainer)
 
 # Updates
 2024
+- removed WD Tagger V2 (use V3 instead)
+- added NoobAI-XL-EarlyAccess Diffusers Models
 - added Pony Diffusion v6 XL and Illustrious XL Models
 - support WD14 v3 Tagger Large Models 
 - added WD14 v3 Tagger
