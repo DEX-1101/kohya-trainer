@@ -9,4 +9,4 @@ subprocess.run("pip install flax==0.8.4 jax==0.4.23 jaxlib==0.4.23 opencv-python
 subprocess.run("pip uninstall -y salesforce-lavis pygobject", shell=True)
 
 print("\033[34mChecking dependencies...\033[0m")
-result = subprocess.run(['pip', 'check'], capture_output=True, text=True); print("\n".join([f"\033[1;33m {line}\033[0m" for line in result.stdout.splitlines()]) if result.stdout else "No dependency issues found.")
+result = subprocess.run(['pip', 'check'], capture_output=True, text=True); print("\n".join([f"\033[1;33m- {line}\033[0m" for line in result.stdout.splitlines()]) if result.stdout else "No dependency issues found.")
