@@ -5,7 +5,7 @@ subprocess.run("pip install xformers==0.0.28.post3", shell=True)
 
 print("\033[34mFixing dependencies...\033[0m")
 subprocess.run("pip install prodigyopt==1.0 onnxruntime==1.17.3", shell=True)
-subprocess.run("pip install flax==0.8.4 jax==0.4.23 jaxlib==0.4.23 opencv-python-headless protobuf==4.21.6", shell=True)
+subprocess.run("pip install flax==0.8.4 jax==0.4.23 jaxlib==0.4.23 opencv-python-headless", shell=True)
 subprocess.run("pip uninstall -y pygobject salesforce-lavis", shell=True)
 
 print("\033[34mChecking dependencies...\033[0m")
