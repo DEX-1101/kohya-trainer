@@ -4,6 +4,8 @@ LoRA XL Trainer colab from [Linarquf](https://github.com/Linaqruf/kohya-trainer)
 [![](https://img.shields.io/static/v1?message=Open%20in%20Colab&logo=googlecolab&labelColor=5c5c5c&color=0f80c1&label=%20&style=for-the-badge)](https://colab.research.google.com/github/DEX-1101/kohya-trainer/blob/main/kohya_LoRA_trainer_XL_v1.ipynb)
 
 # Updates
+2025
+- added IllustriousXL v1.0 Diffusers Models
 2024
 - removed WD Tagger V2 (use V3 instead)
 - added NoobAI-XL-EarlyAccess Diffusers Models
