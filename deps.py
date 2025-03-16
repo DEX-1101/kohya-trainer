@@ -1,7 +1,7 @@
 import os
 import subprocess
 print("\033[34mInstalling xformers...\033[0m")
-subprocess.run("pip install xformers==0.0.28.post3", shell=True)
+subprocess.run("pip install xformers==0.0.29.post3", shell=True)
 
 print("\033[34mFixing dependencies...\033[0m")
 subprocess.run("pip install prodigyopt==1.0 onnxruntime==1.17.3", shell=True)
