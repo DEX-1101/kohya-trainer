@@ -7,7 +7,7 @@ subprocess.run("pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 -
 print("\033[34mFixing dependencies...\033[0m")
 subprocess.run("pip install prodigyopt==1.0 onnxruntime==1.17.3", shell=True)
 subprocess.run("pip install flax==0.8.4 jax==0.4.23 jaxlib==0.4.23 opencv-python-headless", shell=True)
-subprocess.run("pip install httpx==0.28.1 numpy==1.26.4 protobuf==5.29.1 open-clip-torch==2.32.0 wandb==0.21.0 diffusers==0.33.1 jedi==0.19.2 huggingface-hub==0.34.4 opencv-python==4.10.0.82", shell=True)
+subprocess.run("pip install httpx==0.28.1 numpy==1.26.4 protobuf==5.29.1 open-clip-torch==2.32.0 wandb==0.21.0", shell=True)
 subprocess.run("pip uninstall -y pygobject salesforce-lavis", shell=True)
 
 print("\033[34mChecking dependencies...\033[0m")
