@@ -1,7 +1,8 @@
 import os
 import subprocess
 print("\033[34mInstalling xformers...\033[0m")
-subprocess.run("pip install xformers==0.0.32.post2", shell=True)
+subprocess.run("pip install xformers==0.0.29.post3", shell=True)
+subprocess.run("pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu126", shell=true)
 
 print("\033[34mFixing dependencies...\033[0m")
 subprocess.run("pip install prodigyopt==1.0 onnxruntime==1.17.3", shell=True)
